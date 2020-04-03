@@ -1,8 +1,43 @@
+v1.4.5
+fix : Compression ratio regression on huge files (> 3 GB) using high levels (--ultra) and multithreading, by @terrelln
+perf: Improved decompression speed: x64 : +10% (clang) / +5% (gcc); ARM : from +15% to +50%, depending on chip, by @terrelln
+cli: new command --filelist=FILE : provide list of files within a file, by @AhmedAbdellah19
+cli: new command --patch-from=FILE (experimental) : generate diff from 2 files, by @bimbashrestha
+api: controlled block size for lower latency, new experimental parameter by @ephiepark
+build: mingw cross-compilation from unix, by @Ericson2314
+misc: bitflip analyzer tool, by @felixhandte
+
+v1.4.4
+perf: Improved decompression speed, by > 10%, by @terrelln
+perf: Better compression speed when re-using a context, by @felixhandte
+perf: Fix compression ratio when compressing large files with small dictionary, by @senhuang42
+perf: zstd reference encoder can generate RLE blocks, by @bimbashrestha
+perf: minor generic speed optimization, by @davidbolvansky
+api: new ability to extract sequences from the parser for analysis, by @bimbashrestha
+api: fixed decoding of magic-less frames, by @terrelln
+api: fixed ZSTD_initCStream_advanced() performance with fast modes, reported by @QrczakMK
+cli: Named pipes support, by @bimbashrestha
+cli: short tar's extension support, by @stokito
+cli: command --output-dir-flat= , generates target files into requested directory, by @senhuang42
+cli: commands --stream-size=# and --size-hint=#, by @nmagerko
+cli: command --exclude-compressed, by @shashank0791
+cli: faster `-t` test mode
+cli: improved some error messages, by @vangyzen
+cli: fix command `-D dictionary` on Windows, reported by @artyompetrov
+cli: fix rare deadlock condition within dictionary builder, by @terrelln
+build: single-file decoder with emscripten compilation script, by @cwoffenden
+build: fixed zlibWrapper compilation on Visual Studio, reported by @bluenlive
+build: fixed deprecation warning for certain gcc version, reported by @jasonma163
+build: fix compilation on old gcc versions, by @cemeyer
+build: improved installation directories for cmake script, by Dmitri Shubin
+pack: modified pkgconfig, for better integration into openwrt, requested by @neheb
+misc: Improved documentation : ZSTD_CLEVEL, DYNAMIC_BMI2, ZSTD_CDict, function deprecation, zstd format
+misc: fixed educational decoder : accept larger literals section, and removed UNALIGNED() macro
+
 v1.4.3
 bug: Fix Dictionary Compression Ratio Regression by @cyan4973 (#1709)
-bug: Fix Buffer Overflow in v0.3 Decompression by @felixhandte (#1722)
+bug: Fix Buffer Overflow in legacy v0.3 decompression by @felixhandte (#1722)
 build: Add support for IAR C/C++ Compiler for Arm by @joseph0918 (#1705)
-misc: Add NULL pointer check in util.c by @leeyoung624 (#1706)
 
 v1.4.2
 bug: Fix bug in zstd-0.5 decoder by @terrelln (#1696)

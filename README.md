@@ -15,6 +15,7 @@ a list of known ports and bindings is provided on [Zstandard homepage](http://ww
 [![Build status][AppveyorDevBadge]][AppveyorLink]
 [![Build status][CircleDevBadge]][CircleLink]
 [![Build status][CirrusDevBadge]][CirrusLink]
+[![Fuzzing Status][OSSFuzzBadge]][OSSFuzzLink]
 
 [travisDevBadge]: https://travis-ci.org/facebook/zstd.svg?branch=dev "Continuous Integration test suite"
 [travisLink]: https://travis-ci.org/facebook/zstd
@@ -24,6 +25,8 @@ a list of known ports and bindings is provided on [Zstandard homepage](http://ww
 [CircleLink]: https://circleci.com/gh/facebook/zstd
 [CirrusDevBadge]: https://api.cirrus-ci.com/github/facebook/zstd.svg?branch=dev
 [CirrusLink]: https://cirrus-ci.com/github/facebook/zstd
+[OSSFuzzBadge]: https://oss-fuzz-build-logs.storage.googleapis.com/badges/zstd.svg
+[OSSFuzzLink]: https://bugs.chromium.org/p/oss-fuzz/issues/list?sort=-opened&can=1&q=proj:zstd
 
 ## Benchmarks
 
@@ -40,7 +43,7 @@ on the [Silesia compression corpus].
 
 | Compressor name         | Ratio | Compression| Decompress.|
 | ---------------         | ------| -----------| ---------- |
-| **zstd 1.4.0 -1**       | 2.884 |   530 MB/s |  1360 MB/s |
+| **zstd 1.4.4 -1**       | 2.884 |   520 MB/s |  1600 MB/s |
 | zlib 1.2.11 -1          | 2.743 |   110 MB/s |   440 MB/s |
 | brotli 1.0.7 -0         | 2.701 |   430 MB/s |   470 MB/s |
 | quicklz 1.5.0 -1        | 2.238 |   600 MB/s |   800 MB/s |
@@ -139,6 +142,18 @@ You can also take a look at [`.travis.yml`](.travis.yml) file for an
 example about how Meson is used to build this project.
 
 Note that default build type is **release**.
+
+### VCPKG
+You can build and install zstd [vcpkg](https://github.com/Microsoft/vcpkg/) dependency manager:
+
+    git clone https://github.com/Microsoft/vcpkg.git
+    cd vcpkg
+    ./bootstrap-vcpkg.sh
+    ./vcpkg integrate install
+    ./vcpkg install zstd
+
+The zstd port in vcpkg is kept up to date by Microsoft team members and community contributors.
+If the version is out of date, please [create an issue or pull request](https://github.com/Microsoft/vcpkg) on the vcpkg repository.
 
 ### Visual Studio (Windows)
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-present, Yann Collet, Facebook, Inc.
+ * Copyright (c) 2016-2020, Yann Collet, Facebook, Inc.
  * All rights reserved.
  *
  * This source code is licensed under both the BSD-style license (found in the
@@ -128,6 +128,8 @@ static const size_t ZSTD_did_fieldSize[4] = { 0, 1, 2, 4 };
 static const size_t ZSTD_blockHeaderSize = ZSTD_BLOCKHEADERSIZE;
 typedef enum { bt_raw, bt_rle, bt_compressed, bt_reserved } blockType_e;
 
+#define ZSTD_FRAMECHECKSUMSIZE 4
+
 #define MIN_SEQUENCES_SIZE 1 /* nbSeq==0 */
 #define MIN_CBLOCK_SIZE (1 /*litCSize*/ + 1 /* RLE or RAW */ + MIN_SEQUENCES_SIZE /* nbSeq==0 */)   /* for a non-null block */
 
@@ -197,77 +199,53 @@ static void ZSTD_copy8(void* dst, const void* src) { memcpy(dst, src, 8); }
 static void ZSTD_copy16(void* dst, const void* src) { memcpy(dst, src, 16); }
 #define COPY16(d,s) { ZSTD_copy16(d,s); d+=16; s+=16; }
 
-#define WILDCOPY_OVERLENGTH 8
-#define VECLEN 16
+#define WILDCOPY_OVERLENGTH 32
+#define WILDCOPY_VECLEN 16
 
 typedef enum {
     ZSTD_no_overlap,
-    ZSTD_overlap_src_before_dst,
+    ZSTD_overlap_src_before_dst
     /*  ZSTD_overlap_dst_before_src, */
 } ZSTD_overlap_e;
 
 /*! ZSTD_wildcopy() :
- *  custom version of memcpy(), can overwrite up to WILDCOPY_OVERLENGTH bytes (if length==0) */
-MEM_STATIC FORCE_INLINE_ATTR DONT_VECTORIZE
-void ZSTD_wildcopy(void* dst, const void* src, ptrdiff_t length, ZSTD_overlap_e ovtype)
+ *  Custom version of memcpy(), can over read/write up to WILDCOPY_OVERLENGTH bytes (if length==0)
+ *  @param ovtype controls the overlap detection
+ *         - ZSTD_no_overlap: The source and destination are guaranteed to be at least WILDCOPY_VECLEN bytes apart.
+ *         - ZSTD_overlap_src_before_dst: The src and dst may overlap, but they MUST be at least 8 bytes apart.
+ *           The src buffer must be before the dst buffer.
+ */
+MEM_STATIC FORCE_INLINE_ATTR 
+void ZSTD_wildcopy(void* dst, const void* src, ptrdiff_t length, ZSTD_overlap_e const ovtype)
 {
     ptrdiff_t diff = (BYTE*)dst - (const BYTE*)src;
     const BYTE* ip = (const BYTE*)src;
     BYTE* op = (BYTE*)dst;
     BYTE* const oend = op + length;
 
-    assert(diff >= 8 || (ovtype == ZSTD_no_overlap && diff < -8));
-    if (length < VECLEN || (ovtype == ZSTD_overlap_src_before_dst && diff < VECLEN)) {
-      do
-          COPY8(op, ip)
-      while (op < oend);
-    }
-    else {
-      if ((length & 8) == 0)
-        COPY8(op, ip);
-      do {
+    assert(diff >= 8 || (ovtype == ZSTD_no_overlap && diff <= -WILDCOPY_VECLEN));
+
+    if (ovtype == ZSTD_overlap_src_before_dst && diff < WILDCOPY_VECLEN) {
+        /* Handle short offset copies. */
+        do {
+            COPY8(op, ip)
+        } while (op < oend);
+    } else {
+        assert(diff >= WILDCOPY_VECLEN || diff <= -WILDCOPY_VECLEN);
+        /* Separate out the first COPY16() call because the copy length is
+         * almost certain to be short, so the branches have different
+         * probabilities. Since it is almost certain to be short, only do
+	 * one COPY16() in the first call. Then, do two calls per loop since
+	 * at that point it is more likely to have a high trip count.
+         */
         COPY16(op, ip);
-      }
-      while (op < oend);
+        if (op >= oend) return;
+        do {
+            COPY16(op, ip);
+            COPY16(op, ip);
+        }
+        while (op < oend);
     }
-}
-
-/*! ZSTD_wildcopy_16min() :
- *  same semantics as ZSTD_wilcopy() except guaranteed to be able to copy 16 bytes at the start */
-MEM_STATIC FORCE_INLINE_ATTR DONT_VECTORIZE
-void ZSTD_wildcopy_16min(void* dst, const void* src, ptrdiff_t length, ZSTD_overlap_e ovtype)
-{
-    ptrdiff_t diff = (BYTE*)dst - (const BYTE*)src;
-    const BYTE* ip = (const BYTE*)src;
-    BYTE* op = (BYTE*)dst;
-    BYTE* const oend = op + length;
-
-    assert(length >= 8);
-    assert(diff >= 8 || (ovtype == ZSTD_no_overlap && diff < -8));
-
-    if (ovtype == ZSTD_overlap_src_before_dst && diff < VECLEN) {
-      do
-          COPY8(op, ip)
-      while (op < oend);
-    }
-    else {
-      if ((length & 8) == 0)
-        COPY8(op, ip);
-      do {
-        COPY16(op, ip);
-      }
-      while (op < oend);
-    }
-}
-
-MEM_STATIC void ZSTD_wildcopy_e(void* dst, const void* src, void* dstEnd)   /* should be faster for decoding, but strangely, not verified on all platform */
-{
-    const BYTE* ip = (const BYTE*)src;
-    BYTE* op = (BYTE*)dst;
-    BYTE* const oend = (BYTE*)dstEnd;
-    do
-        COPY8(op, ip)
-    while (op < oend);
 }
 
 
@@ -320,10 +298,9 @@ MEM_STATIC U32 ZSTD_highbit32(U32 val)   /* compress, dictBuilder, decodeCorpus 
     {
 #   if defined(_MSC_VER)   /* Visual */
         unsigned long r=0;
-        _BitScanReverse(&r, val);
-        return (unsigned)r;
+        return _BitScanReverse(&r, val) ? (unsigned)r : 0;
 #   elif defined(__GNUC__) && (__GNUC__ >= 3)   /* GCC Intrinsic */
-        return 31 - __builtin_clz(val);
+        return __builtin_clz (val) ^ 31;
 #   elif defined(__ICCARM__)    /* IAR Intrinsic */
         return 31 - __CLZ(val);
 #   else   /* Software version */

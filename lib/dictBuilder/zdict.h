@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-present, Yann Collet, Facebook, Inc.
+ * Copyright (c) 2016-2020, Yann Collet, Facebook, Inc.
  * All rights reserved.
  *
  * This source code is licensed under both the BSD-style license (found in the
@@ -64,6 +64,7 @@ ZDICTLIB_API size_t ZDICT_trainFromBuffer(void* dictBuffer, size_t dictBufferCap
 
 /*======   Helper functions   ======*/
 ZDICTLIB_API unsigned ZDICT_getDictID(const void* dictBuffer, size_t dictSize);  /**< extracts dictID; @return zero if error (not a valid dictionary) */
+ZDICTLIB_API size_t ZDICT_getDictHeaderSize(const void* dictBuffer, size_t dictSize);  /* returns dict header size; returns a ZSTD error code on failure */
 ZDICTLIB_API unsigned ZDICT_isError(size_t errorCode);
 ZDICTLIB_API const char* ZDICT_getErrorName(size_t errorCode);
 

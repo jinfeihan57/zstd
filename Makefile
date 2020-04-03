@@ -1,10 +1,11 @@
 # ################################################################
-# Copyright (c) 2015-present, Yann Collet, Facebook, Inc.
+# Copyright (c) 2015-2020, Yann Collet, Facebook, Inc.
 # All rights reserved.
 #
 # This source code is licensed under both the BSD-style license (found in the
 # LICENSE file in the root directory of this source tree) and the GPLv2 (found
 # in the COPYING file in the root directory of this source tree).
+# You may select, at your option, one of the above-listed licenses.
 # ################################################################
 
 PRGDIR   = programs
@@ -69,6 +70,7 @@ test: MOREFLAGS += -g -DDEBUGLEVEL=$(DEBUGLEVEL) -Werror
 test:
 	MOREFLAGS="$(MOREFLAGS)" $(MAKE) -j -C $(PRGDIR) allVariants
 	$(MAKE) -C $(TESTDIR) $@
+	ZSTD=../../programs/zstd $(MAKE) -C doc/educational_decoder test
 
 ## shortest: same as `make check`
 .PHONY: shortest
@@ -78,6 +80,13 @@ shortest:
 ## check: run basic tests for `zstd` cli
 .PHONY: check
 check: shortest
+
+.PHONY: automated_benchmarking
+automated_benchmarking:
+	$(MAKE) -C $(TESTDIR) $@
+
+.PHONY: benchmarking
+benchmarking: automated_benchmarking
 
 ## examples: build all examples in `/examples` directory
 .PHONY: examples
@@ -336,7 +345,7 @@ endif
 
 ifneq (,$(filter MSYS%,$(shell uname)))
 HOST_OS = MSYS
-CMAKE_PARAMS = -G"MSYS Makefiles" -DZSTD_MULTITHREAD_SUPPORT:BOOL=OFF -DZSTD_BUILD_STATIC:BOOL=ON -DZSTD_BUILD_TESTS:BOOL=ON
+CMAKE_PARAMS = -G"MSYS Makefiles" -DCMAKE_BUILD_TYPE=Debug -DZSTD_MULTITHREAD_SUPPORT:BOOL=OFF -DZSTD_BUILD_STATIC:BOOL=ON -DZSTD_BUILD_TESTS:BOOL=ON
 endif
 
 
@@ -348,11 +357,15 @@ cmakebuild:
 	cmake --version
 	$(RM) -r $(BUILDIR)/cmake/build
 	mkdir $(BUILDIR)/cmake/build
-	cd $(BUILDIR)/cmake/build ; cmake -DCMAKE_INSTALL_PREFIX:PATH=~/install_test_dir $(CMAKE_PARAMS) .. ; $(MAKE) install ; $(MAKE) uninstall
+	cd $(BUILDIR)/cmake/build; cmake -DCMAKE_INSTALL_PREFIX:PATH=~/install_test_dir $(CMAKE_PARAMS) ..
+	$(MAKE) -C $(BUILDIR)/cmake/build -j4;
+	$(MAKE) -C $(BUILDIR)/cmake/build install;
+	$(MAKE) -C $(BUILDIR)/cmake/build uninstall;
+	cd $(BUILDIR)/cmake/build; ctest -V
 
-c90build: clean
+c89build: clean
 	$(CC) -v
-	CFLAGS="-std=c90 -Werror" $(MAKE) allmost  # will fail, due to missing support for `long long`
+	CFLAGS="-std=c89 -Werror" $(MAKE) allmost  # will fail, due to missing support for `long long`
 
 gnu90build: clean
 	$(CC) -v

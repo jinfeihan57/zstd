@@ -1,10 +1,11 @@
 /*
- * Copyright (c) 2016-present, Yann Collet, Facebook, Inc.
+ * Copyright (c) 2016-2020, Yann Collet, Facebook, Inc.
  * All rights reserved.
  *
  * This source code is licensed under both the BSD-style license (found in the
  * LICENSE file in the root directory of this source tree) and the GPLv2 (found
  * in the COPYING file in the root directory of this source tree).
+ * You may select, at your option, one of the above-listed licenses.
  */
 
 #include "zstd_ldm.h"
@@ -49,9 +50,9 @@ size_t ZSTD_ldm_getTableSize(ldmParams_t params)
 {
     size_t const ldmHSize = ((size_t)1) << params.hashLog;
     size_t const ldmBucketSizeLog = MIN(params.bucketSizeLog, params.hashLog);
-    size_t const ldmBucketSize =
-        ((size_t)1) << (params.hashLog - ldmBucketSizeLog);
-    size_t const totalSize = ldmBucketSize + ldmHSize * sizeof(ldmEntry_t);
+    size_t const ldmBucketSize = ((size_t)1) << (params.hashLog - ldmBucketSizeLog);
+    size_t const totalSize = ZSTD_cwksp_alloc_size(ldmBucketSize)
+                           + ZSTD_cwksp_alloc_size(ldmHSize * sizeof(ldmEntry_t));
     return params.enableLdm ? totalSize : 0;
 }
 
@@ -583,7 +584,7 @@ size_t ZSTD_ldm_blockCompress(rawSeqStore_t* rawSeqStore,
                 rep[i] = rep[i-1];
             rep[0] = sequence.offset;
             /* Store the sequence */
-            ZSTD_storeSeq(seqStore, newLitLength, ip - newLitLength,
+            ZSTD_storeSeq(seqStore, newLitLength, ip - newLitLength, iend,
                           sequence.offset + ZSTD_REP_MOVE,
                           sequence.matchLength - MINMATCH);
             ip += sequence.matchLength;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-present, Yann Collet, Facebook, Inc.
+ * Copyright (c) 2016-2020, Yann Collet, Facebook, Inc.
  * All rights reserved.
  *
  * This source code is licensed under both the BSD-style license (found in the
@@ -202,7 +202,6 @@ BMK_benchOutcome_t BMK_benchMemAdvanced(const void* srcBuffer, size_t srcSize,
                         const void* dictBuffer, size_t dictBufferSize,
                         int displayLevel, const char* displayName,
                         const BMK_advancedParams_t* adv);
-
 
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-present, Yann Collet, Facebook, Inc.
+ * Copyright (c) 2016-2020, Yann Collet, Facebook, Inc.
  * All rights reserved.
  *
  * This source code is licensed under both the BSD-style license (found in the
@@ -756,7 +756,7 @@ MEM_STATIC unsigned BITv05_highbit32 (U32 val)
     _BitScanReverse ( &r, val );
     return (unsigned) r;
 #   elif defined(__GNUC__) && (__GNUC__ >= 3)   /* Use GCC Intrinsic */
-    return 31 - __builtin_clz (val);
+    return __builtin_clz (val) ^ 31;
 #   else   /* Software version */
     static const unsigned DeBruijnClz[32] = { 0, 9, 1, 10, 13, 21, 2, 29, 11, 14, 16, 18, 22, 25, 3, 30, 8, 12, 20, 28, 15, 17, 24, 7, 19, 27, 23, 6, 26, 5, 4, 31 };
     U32 v = val;
@@ -3791,7 +3791,9 @@ static size_t ZBUFFv05_blockHeaderSize = 3;
 static size_t ZBUFFv05_limitCopy(void* dst, size_t maxDstSize, const void* src, size_t srcSize)
 {
     size_t length = MIN(maxDstSize, srcSize);
-    memcpy(dst, src, length);
+    if (length > 0) {
+        memcpy(dst, src, length);
+    }
     return length;
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-present, Yann Collet, Facebook, Inc.
+ * Copyright (c) 2016-2020, Yann Collet, Facebook, Inc.
  * All rights reserved.
  *
  * This source code is licensed under both the BSD-style license (found in the
@@ -59,6 +59,13 @@
 #  define HINT_INLINE static INLINE_KEYWORD
 #else
 #  define HINT_INLINE static INLINE_KEYWORD FORCE_INLINE_ATTR
+#endif
+
+/* UNUSED_ATTR tells the compiler it is okay if the function is unused. */
+#if defined(__GNUC__)
+#  define UNUSED_ATTR __attribute__((unused))
+#else
+#  define UNUSED_ATTR
 #endif
 
 /* force no inlining */
@@ -129,7 +136,7 @@
 
 /* vectorization
  * older GCC (pre gcc-4.3 picked as the cutoff) uses a different syntax */
-#if !defined(__clang__) && defined(__GNUC__)
+#if !defined(__INTEL_COMPILER) && !defined(__clang__) && defined(__GNUC__)
 #  if (__GNUC__ == 4 && __GNUC_MINOR__ > 3) || (__GNUC__ >= 5)
 #    define DONT_VECTORIZE __attribute__((optimize("no-tree-vectorize")))
 #  else
@@ -137,6 +144,19 @@
 #  endif
 #else
 #  define DONT_VECTORIZE
+#endif
+
+/* Tell the compiler that a branch is likely or unlikely.
+ * Only use these macros if it causes the compiler to generate better code.
+ * If you can remove a LIKELY/UNLIKELY annotation without speed changes in gcc
+ * and clang, please do.
+ */
+#if defined(__GNUC__)
+#define LIKELY(x) (__builtin_expect((x), 1))
+#define UNLIKELY(x) (__builtin_expect((x), 0))
+#else
+#define LIKELY(x) (x)
+#define UNLIKELY(x) (x)
 #endif
 
 /* disable warnings */

@@ -23,6 +23,8 @@ else()
 endif()
 cmake_policy(VERSION ${ZSTD_CMAKE_POLICY_VERSION})
 
+set(CMAKE_BUILD_WITH_INSTALL_RPATH on)
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
 set(ZSTD_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 set(LIBRARY_DIR ${ZSTD_SOURCE_DIR}/lib)
@@ -124,15 +126,20 @@ endif ()
 #-----------------------------------------------------------------------------
 add_subdirectory(lib)
 
+option(ZSTD_PROGRAMS_LINK_SHARED "PROGRAMS LINK SHARED" OFF)
+
 if (ZSTD_BUILD_PROGRAMS)
-    if (NOT ZSTD_BUILD_STATIC)
+    if (NOT ZSTD_BUILD_STATIC AND NOT ZSTD_PROGRAMS_LINK_SHARED)
         message(SEND_ERROR "You need to build static library to build zstd CLI")
+    elseif(NOT ZSTD_BUILD_SHARED AND ZSTD_PROGRAMS_LINK_SHARED)
+        message(SEND_ERROR "You need to build shared library to build zstd CLI")
     endif ()
 
     add_subdirectory(programs)
 endif ()
 
 if (ZSTD_BUILD_TESTS)
+    enable_testing()
     if (NOT ZSTD_BUILD_STATIC)
         message(SEND_ERROR "You need to build static library to build tests")
     endif ()

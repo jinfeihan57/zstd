@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-present, Yann Collet, Facebook, Inc.
+ * Copyright (c) 2016-2020, Yann Collet, Facebook, Inc.
  * All rights reserved.
  *
  * This source code is licensed under both the BSD-style license (found in the
@@ -160,7 +160,7 @@ struct ZSTD_DCtx_s
 
 /*! ZSTD_loadDEntropy() :
  *  dict : must point at beginning of a valid zstd dictionary.
- * @return : size of entropy tables read */
+ * @return : size of dictionary header (size of magic number + dict ID + entropy tables) */
 size_t ZSTD_loadDEntropy(ZSTD_entropyDTables_t* entropy,
                    const void* const dict, size_t const dictSize);
 
